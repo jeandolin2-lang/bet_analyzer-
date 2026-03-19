@@ -15,11 +15,11 @@ def index():
         file = request.files.get('file')
         if file:
             try:
-                # 1. Préparation de l'image en Base64
+                # 1. Préparation de l'image
                 image_data = base64.b64encode(file.read()).decode('utf-8')
                 
-                # 2. Configuration de l'appel direct (On force la version v1 ici)
-                url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+                # 2. Utilisation de GEMINI-PRO-VISION (Le modèle le plus compatible)
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={API_KEY}"
                 
                 payload = {
                     "contents": [{
@@ -30,15 +30,16 @@ def index():
                     }]
                 }
 
-                # 3. Envoi de la requête
+                # 3. Envoi
                 response = requests.post(url, json=payload)
                 data = response.json()
 
-                # 4. Extraction de la réponse
+                # 4. Extraction
                 if "candidates" in data:
                     analyse_resultat = data["candidates"][0]["content"]["parts"][0]["text"]
                 else:
-                    analyse_resultat = f"Erreur API : {data.get('error', {}).get('message', 'Réponse inconnue')}"
+                    # Si ça échoue encore, on affiche la réponse brute pour comprendre
+                    analyse_resultat = f"Détails : {data}"
 
             except Exception as e:
                 analyse_resultat = f"Erreur technique : {str(e)}"
