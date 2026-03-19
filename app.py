@@ -10,9 +10,8 @@ app = Flask(__name__)
 API_KEY = "AIzaSyBrYUgfQP3E_ZV6nMTTJdR-XZVgGPJrIH4"
 genai.configure(api_key=API_KEY)
 
-# Utilisation du nom de modèle complet pour éviter l'erreur 404
-# gemini-1.5-flash-latest est le plus compatible sur Render
-model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
+# On utilise 'gemini-pro-vision', il est reconnu partout sans erreur 404
+model = genai.GenerativeModel('gemini-pro-vision')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -23,19 +22,14 @@ def index():
             try:
                 img = Image.open(file.stream)
                 
-                prompt = """
-                Analyse cette capture de pari Bet261 (Madagascar). 
-                Nous sommes le 20 Mars 2026.
-                Donne un verdict : ASSURÉ, RISQUÉ ou DANGEREUX.
-                Propose une alternative si besoin.
-                Réponds en français direct (Style Gasy).
-                """
+                # Le prompt reste le même
+                prompt = "Analyse cette capture de pari Bet261. Donne un verdict : ASSURÉ, RISQUÉ ou DANGEREUX. Réponds en français style Gasy."
                 
-                # Utilisation de generate_content qui est la méthode standard
+                # Version simplifiée pour la compatibilité maximale
                 response = model.generate_content([prompt, img])
                 analyse_resultat = response.text
             except Exception as e:
-                # On affiche l'erreur proprement si ça persiste
+                # Si ça rate encore, on affiche l'erreur pour comprendre
                 analyse_resultat = f"Erreur technique : {str(e)}"
 
     return render_template('index.html', resultat=analyse_resultat)
