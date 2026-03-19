@@ -2,16 +2,15 @@ import os
 from flask import Flask, render_template, request
 import google.generativeai as genai
 from PIL import Image
-import io
 
 app = Flask(__name__)
 
-# Ta clé API
+# TA CLÉ EST BIEN ICI :
 API_KEY = "AIzaSyBrYUgfQP3E_ZV6nMTTJdR-XZVgGPJrIH4"
 genai.configure(api_key=API_KEY)
 
-# On utilise 'gemini-pro-vision', il est reconnu partout sans erreur 404
-model = genai.GenerativeModel('gemini-pro-vision')
+# On utilise le nom court 'gemini-1.5-flash' qui est le plus standard
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -20,17 +19,23 @@ def index():
         file = request.files.get('file')
         if file:
             try:
+                # Lecture de l'image
                 img = Image.open(file.stream)
                 
-                # Le prompt reste le même
-                prompt = "Analyse cette capture de pari Bet261. Donne un verdict : ASSURÉ, RISQUÉ ou DANGEREUX. Réponds en français style Gasy."
+                # On force l'IA à répondre simplement pour tester
+                prompt = "Analyse ce ticket de pari Bet261. Est-ce un bon pronostic ? Réponds en français style Gasy."
                 
-                # Version simplifiée pour la compatibilité maximale
+                # Appel de l'IA
                 response = model.generate_content([prompt, img])
-                analyse_resultat = response.text
+                
+                if response and response.text:
+                    analyse_resultat = response.text
+                else:
+                    analyse_resultat = "L'IA a lu l'image mais n'a pas pu générer de texte."
+                    
             except Exception as e:
-                # Si ça rate encore, on affiche l'erreur pour comprendre
-                analyse_resultat = f"Erreur technique : {str(e)}"
+                # Affichage de l'erreur précise pour le débuggage
+                analyse_resultat = f"Détails technique : {str(e)}"
 
     return render_template('index.html', resultat=analyse_resultat)
 
