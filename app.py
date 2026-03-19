@@ -1,18 +1,12 @@
 import os
+import requests
 from flask import Flask, render_template, request
-import google.generativeai as genai
-from PIL import Image
+import base64
 
 app = Flask(__name__)
 
 # TA CLÉ API
 API_KEY = "AIzaSyBrYUgfQP3E_ZV6nMTTJdR-XZVgGPJrIH4"
-
-# CONFIGURATION FORCEE EN VERSION V1 (STABLE)
-genai.configure(api_key=API_KEY, transport='rest') # 'rest' est plus stable sur Render
-
-# Utilisation du nom complet du modèle
-model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -21,15 +15,31 @@ def index():
         file = request.files.get('file')
         if file:
             try:
-                img = Image.open(file.stream)
+                # 1. Préparation de l'image en Base64
+                image_data = base64.b64encode(file.read()).decode('utf-8')
                 
-                # Le Prompt pour tes pronostics Bet261
-                prompt = "Analyse cette capture Bet261. Donne un verdict : ASSURÉ, RISQUÉ ou DANGEREUX. Réponds en français simple (Style Gasy)."
+                # 2. Configuration de l'appel direct (On force la version v1 ici)
+                url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
                 
-                # Appel à l'IA
-                response = model.generate_content([prompt, img])
-                analyse_resultat = response.text
-                
+                payload = {
+                    "contents": [{
+                        "parts": [
+                            {"text": "Analyse cette capture Bet261. Donne un verdict : ASSURÉ, RISQUÉ ou DANGEREUX. Réponds en français simple (Style Gasy)."},
+                            {"inline_data": {"mime_type": "image/jpeg", "data": image_data}}
+                        ]
+                    }]
+                }
+
+                # 3. Envoi de la requête
+                response = requests.post(url, json=payload)
+                data = response.json()
+
+                # 4. Extraction de la réponse
+                if "candidates" in data:
+                    analyse_resultat = data["candidates"][0]["content"]["parts"][0]["text"]
+                else:
+                    analyse_resultat = f"Erreur API : {data.get('error', {}).get('message', 'Réponse inconnue')}"
+
             except Exception as e:
                 analyse_resultat = f"Erreur technique : {str(e)}"
 
